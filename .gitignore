@@ -1,3 +1,5 @@
 output.txt
-src/__pycache__
 .vscode
+# cache de python
+src/__pycache__
+src/*.pyc
