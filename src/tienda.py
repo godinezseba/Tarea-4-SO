@@ -9,36 +9,40 @@ class Tienda():
         self.total = cantidad  # total de gente a atender
         self.totalgente = 0  # cantidad de gente atendida
         # semaforo para controlar la gente que entra
-        self.SemGente = threading.Semaphore(1)
+        self.SemGente = threading.Semaphore(self.capacidad)
+        # semaforo para alterar la variable de gente que entra
+        self.checkGente = threading.Semaphore(1)
 
     def clientesEntra(self):
         self.SemGente.acquire()
-        # if(self.gente == self.capacidad):
-        #     print("ERROR: QUIERE ENTRAR ALGUIEN QUE NO DEBE")
-        #     exit()
         self.gente += 1
-        self.totalgente += 1
-        self.SemGente.release()
 
     def clienteSale(self):
-        self.SemGente.acquire()
-        if(self.gente == 0):
-            print("ERROR: QUIERE SALIR ALGUIEN QUE NO ESTA DENTRO")
-            exit()
-        self.gente -= 1
-        self.SemGente.release()
+        # actualizo el total
+        self.checkGente.acquire()
+        self.totalgente += 1
+        self.checkGente.release()
 
+        self.gente -= 1
+        self.SemGente.release()  # libero para que entre otro
+
+    # funcion de termino para los distintos componentes de la tienda
+    # checkea que se hayan atendido todos los clientes esperados
+
+    def termino(self, clientes):
+        clientes.acquire()
+        print("HOLA")
+        self.checkGente.acquire()
+        cond = not(self.total == self.totalgente)
+        self.checkGente.release()
+        return cond
+
+    # nose si las use
     def clientesDentro(self):
         return self.gente
 
     def estaLLeno(self):
         return self.gente < self.capacidad
-
-    def termino(self):
-        self.SemGente.acquire()
-        cond = not(self.total == self.totalgente)
-        self.SemGente.release()
-        return cond
 
 
 class Clientes(threading.Thread):
@@ -56,26 +60,28 @@ class Clientes(threading.Thread):
         self.Sclientes.release()
         # espero pasar
         self.Satendido.acquire()
-        print("cliente " + self.nombre + " se corto el pelito")
+        print(self.nombre + " fue a la mesa")
         sleep(3)
         # se vira
+        # print("---Termino " + self.nombre + "---")
         self.tienda.clienteSale()
 
 
-class Barbero(threading.Thread):
-    def __init__(self, Satendido, Sclientes, tienda):
+class Mesones(threading.Thread):
+    def __init__(self, Satendido, Sclientes, tienda, i):
         threading.Thread.__init__(self)
         self.Satendido = Satendido
         self.tienda = tienda
         self.Sclientes = Sclientes
+        self.nombre = "Meson-"+str(i)
+        self.cantidad = 0
 
     def run(self):
-        while self.tienda.termino():  # REVISAR condicion de termino
-
-            self.Sclientes.acquire()
+        # REVISAR condicion de termino
+        while (self.tienda.termino(self.Sclientes)):
             self.Satendido.release()
-            # time.sleep(0.25)
-            print("estoy cortando el pelito, clientes atendidos: " +
+            self.cantidad += 1
+            print(self.nombre + " " + str(self.cantidad) + " atendiendo, total clientes atendidos: " +
                   str(self.tienda.totalgente))
-        print("Termine de atender")
+        print("***Termine de atender " + self.nombre + "***")
         return
