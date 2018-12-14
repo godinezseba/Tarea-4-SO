@@ -3,21 +3,22 @@ import threading
 
 
 def main():
-    cliente = threading.Semaphore(0)
-    atendido = threading.Semaphore(0)
-    tienda = Tienda(40)
+    cantidad = 40
+    # creo la tienda que en su interior tendra los semaforos
+    tienda = Tienda(cantidad)
+    # creo las hebras
     clientes = list()
     mesones = list()
     cajas = list()
     # genero los mesones
     for i in range(5):
-        mesones.append(Mesones(atendido, cliente, tienda, i+1))
+        mesones.append(Mesones(tienda, i+1))
     # genero los cajas
     for i in range(2):
         cajas.append(Cajas(tienda, i+1))
     # genero los clientes:
-    for i in range(40):
-        clientes.append(Clientes(atendido, cliente, tienda, i+1))
+    for i in range(cantidad):
+        clientes.append(Clientes(tienda, i+1))
     # START
     for i in range(len(mesones)):
         mesones[i].start()

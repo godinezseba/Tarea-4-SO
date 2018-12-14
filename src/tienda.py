@@ -12,9 +12,11 @@ class Tienda():
         self.SemGente = threading.Semaphore(self.capacidad)
         # semaforo para alterar la variable de gente que entra
         self.checkGente = threading.Semaphore(1)
-        # semaforo espera caja
-        self.SesperaCaja = threading.Semaphore(0)
-        self.esperaCliente = threading.Semaphore(0)
+        # semaforo espera caja, izquierda = cliente, derecha =  caja
+        self.SemCaja = (threading.Semaphore(0), threading.Semaphore(0)) 
+        # semaforo espera mesa, izquierda = cliente, derecha = mesa
+        self.SemMesa = (threading.Semaphore(0), threading.Semaphore(0))
+     
 
     def clientesEntra(self):
         self.SemGente.acquire()
@@ -25,53 +27,54 @@ class Tienda():
         self.checkGente.acquire()
         self.totalgente += 1
         self.checkGente.release()
-
         self.gente -= 1
         self.SemGente.release()  # libero para que entre otro
+        if self.termino():
+            self.SemCaja[1].release()
+            self.SemMesa[1].release()
 
     def pasarCaja(self, nombre):
-        self.SesperaCaja.release()
-        self.esperaCliente.acquire()
+        self.SemCaja[1].release() # indicar a la caja que llegue
+        self.SemCaja[0].acquire() # esperar ser atendido
         print(nombre + " fue a la caja")
+        sleep(5)
+
+    def pasarMeson(self, nombre):
+        self.SemMesa[1].release()
+        self.SemMesa[0].acquire()
+        print(nombre + " fue a la meson")
+        sleep(3)
 
     def esperaCaja(self):
-        self.SesperaCaja.acquire()
-        self.esperaCliente.release()
+        self.SemCaja[1].acquire()
+        self.SemCaja[0].release()
+    
+    def esperaMeson(self):
+        self.SemMesa[1].acquire()
+        self.SemMesa[0].release()
 
     # funcion de termino para los distintos componentes de la tienda
     # checkea que se hayan atendido todos los clientes esperados
 
     def termino(self):
         self.checkGente.acquire()
-        cond = not(self.total == self.totalgente)
+        cond = self.total == self.totalgente
         self.checkGente.release()
         return cond
 
-    # nose si las use
-    def clientesDentro(self):
-        return self.gente
-
-    def estaLLeno(self):
-        return self.gente < self.capacidad
 
 
 class Clientes(threading.Thread):
-    def __init__(self, Satendido, Sclientes, tienda, i):
+    def __init__(self, tienda, i):
         threading.Thread.__init__(self)
-        self.Satendido = Satendido
-        self.Sclientes = Sclientes
         self.tienda = tienda
         self.nombre = "Cliente-" + str(i)  # nombre del cliente
 
     def run(self):
         # cliente intenta entrar
         self.tienda.clientesEntra()
-        # aviso llegue al meson
-        self.Sclientes.release()
-        # espero pasar
-        self.Satendido.acquire()
-        print(self.nombre + " fue a la mesa")
-        sleep(3)
+        # va al meson
+        self.tienda.pasarMeson(self.nombre)
         # va a la caja
         self.tienda.pasarCaja(self.nombre)
         # se vira
@@ -80,23 +83,22 @@ class Clientes(threading.Thread):
 
 
 class Mesones(threading.Thread):
-    def __init__(self, Satendido, Sclientes, tienda, i):
+    def __init__(self, tienda, i):
         threading.Thread.__init__(self)
-        self.Satendido = Satendido
         self.tienda = tienda
-        self.Sclientes = Sclientes
         self.nombre = "Meson-" + str(i)
         self.cantidad = 0
 
     def run(self):
         # REVISAR condicion de termino
-        while (self.tienda.termino()):
-            self.Sclientes.acquire()
-            self.Satendido.release()
+        while (True):
+            self.tienda.esperaMeson()
+            if(self.tienda.termino()):
+                break
             self.cantidad += 1
-            print(self.nombre + " " + str(self.cantidad) + " atendiendo, total clientes atendidos: " +
-                  str(self.tienda.totalgente))
-        print("***Termine de atender " + self.nombre + "***")
+            print("\x1b[31m" + self.nombre + " atendiendo" + "\x1b[0m")
+        self.tienda.SemMesa[1].release()
+        print("\x1b[31m***Termine de atender " + self.nombre + "***\x1b[0m")
 
 
 class Cajas(threading.Thread):
@@ -107,8 +109,11 @@ class Cajas(threading.Thread):
         self.cantidad = 0
 
     def run(self):
-        while (self.tienda.termino()):
+        while (True):
             self.tienda.esperaCaja()
+            if(self.tienda.termino()):
+                break
             self.cantidad += 1
-            print(self.nombre + " atendido")
-        print("***Termine de atender " + self.nombre + "***")
+            print("\x1b[32m" + self.nombre + " atendido" + "\x1b[0m")
+        self.tienda.SemCaja[1].release()
+        print("\x1b[32m***Termine de atender " + self.nombre + "***\x1b[0m")
