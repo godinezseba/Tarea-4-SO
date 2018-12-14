@@ -1,4 +1,4 @@
-from tienda import Tienda, Clientes, Mesones
+from tienda import Tienda, Clientes, Mesones, Cajas
 import threading
 
 
@@ -8,15 +8,21 @@ def main():
     tienda = Tienda(40)
     clientes = list()
     mesones = list()
+    cajas = list()
     # genero los mesones
     for i in range(5):
         mesones.append(Mesones(atendido, cliente, tienda, i+1))
+    # genero los cajas
+    for i in range(2):
+        cajas.append(Cajas(tienda, i+1))
     # genero los clientes:
     for i in range(40):
         clientes.append(Clientes(atendido, cliente, tienda, i+1))
     # START
     for i in range(len(mesones)):
         mesones[i].start()
+    for i in range(len(cajas)):
+        cajas[i].start()
     for i in range(len(clientes)):
         clientes[i].start()
 
@@ -24,8 +30,11 @@ def main():
 
     for i in range(len(clientes)):
         clientes[i].join()
+    for i in range(len(cajas)):
+        cajas[i].join()
     for i in range(len(mesones)):
         mesones[i].join()
+
 
 if __name__ == "__main__":
     main()
