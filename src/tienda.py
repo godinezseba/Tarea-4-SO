@@ -1,5 +1,6 @@
 import threading
 from time import sleep
+from datetime import datetime
 
 class Baño:
     def __init__(self):
@@ -35,7 +36,8 @@ class Tienda():
         # semaforo espera mesa, izquierda = cliente, derecha = mesa
         self.SemMesa = (threading.Semaphore(0), threading.Semaphore(0))
         # semaforo para escribir en el archivo
-        self.Escribir = threading.Semaphore(1)
+        self.EscribirC = threading.Semaphore(1)
+        self.EscribirF = threading.Semaphore(1)
      
 
     def clientesEntra(self):
@@ -56,23 +58,19 @@ class Tienda():
     def pasarCaja(self, nombre):
         self.SemCaja[1].release() # indicar a la caja que llegue
         self.SemCaja[0].acquire() # esperar ser atendido
-        self.Escribir.acquire()
-        print(nombre + " fue a la caja")
-        self.Escribir.release()
+        self.EscribirCliente(nombre + " fue a la caja")
         sleep(5)
 
     def pasarMeson(self, nombre):
         self.SemMesa[1].release()
         self.SemMesa[0].acquire()
-        self.Escribir.acquire()
-        print(nombre + " fue a la meson")
-        self.Escribir.release()
+        self.EscribirCliente(nombre + " fue al meson")
         sleep(3)
 
     def esperaCaja(self):
         self.SemCaja[1].acquire()
         self.SemCaja[0].release()
-    
+
     def esperaMeson(self):
         self.SemMesa[1].acquire()
         self.SemMesa[0].release()
@@ -86,7 +84,19 @@ class Tienda():
         self.checkGente.release()
         return cond
 
+    def EscribirCliente(self, mensaje):
+        self.EscribirC.acquire()
+        file = open("clientes.txt", 'a')
+        file.write("[" + str(datetime.now().time()) + "]" + mensaje + "\n")
+        file.close()
+        self.EscribirC.release()
 
+    def EscribirFuncionario(self, mensaje):
+        self.EscribirF.acquire()
+        file = open("funcionarios.txt", 'a')
+        file.write("[" + str(datetime.now().time()) + "]" + mensaje + "\n")
+        file.close()
+        self.EscribirF.release()
 
 class Clientes(threading.Thread):
     def __init__(self, tienda, i):
@@ -111,26 +121,20 @@ class Mesones(threading.Thread):
         threading.Thread.__init__(self)
         self.tienda = tienda
         self.nombre = "Meson-" + str(i)
-        self.cantidad = 0
         self.baño = 0
 
     def run(self):
-        # REVISAR condicion de termino
         while (True):
             self.tienda.esperaMeson()
             if(self.tienda.termino()):
                 break
-            self.cantidad += 1
             self.baño += 1
-            self.tienda.Escribir.acquire()
-            print("\x1b[31m" + self.nombre + " atendiendo " + str(self.cantidad) + "\x1b[0m")
-            self.tienda.Escribir.release()
+            self.tienda.EscribirFuncionario(self.nombre + " atendiendo")
             sleep(3)
             if(self.baño >= 4 and self.tienda.baño.Entrar()):
                 self.baño = 0
-                self.tienda.Escribir.acquire()
-                print("\x1b[34m" + self.nombre + " fue al baño " + str(self.cantidad) + "\x1b[0m")
-                self.tienda.Escribir.release()
+                self.tienda.EscribirFuncionario(self.nombre + " fue al baño")
+
         self.tienda.SemMesa[1].release() # aviso al resto de mesones para que terminen
         print("\x1b[31m***Termine de atender " + self.nombre + "***\x1b[0m")
 
@@ -140,25 +144,18 @@ class Cajas(threading.Thread):
         threading.Thread.__init__(self)
         self.tienda = tienda
         self.nombre = "Caja-" + str(i)
-        self.cantidad = 0
         self.baño = 0
-
 
     def run(self):
         while (True):
             self.tienda.esperaCaja()
             if(self.tienda.termino()):
                 break
-            self.cantidad += 1
             self.baño += 1
-            self.tienda.Escribir.acquire()
-            print("\x1b[32m" + self.nombre + " atendido " + str(self.cantidad) + "\x1b[0m")
-            self.tienda.Escribir.release()
+            self.tienda.EscribirFuncionario(self.nombre + " atendiendo")
             sleep(5)
             if(self.baño >= 5 and self.tienda.baño.Entrar()):
                 self.baño = 0
-                self.tienda.Escribir.acquire()
-                print("\x1b[34m" + self.nombre + " fue al baño " + str(self.cantidad) + "\x1b[0m")
-                self.tienda.Escribir.release()
+                self.tienda.EscribirFuncionario(self.nombre + " fue al baño")
         self.tienda.SemCaja[1].release() # avso al resto de cajas para que terminen
-        print("\x1b[32m***Termine de atender " + self.nombre + "***\x1b[0m")
+        print("\x1b[33m***Termine de atender " + self.nombre + "***\x1b[0m")

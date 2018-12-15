@@ -1,5 +1,9 @@
+# cosas del vscode
 output.txt
 .vscode
 # cache de python
 src/__pycache__
 src/*.pyc
+# output
+clientes.txt
+funcionarios.txt

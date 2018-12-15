@@ -4,6 +4,11 @@ import threading
 
 def main():
     cantidad = 40
+    # reseteo los archivos
+    clientes = open("clientes.txt", 'w')
+    clientes.close()
+    funcionarios = open("funcionarios.txt", 'w')
+    funcionarios.close()
     # creo la tienda que en su interior tendra los semaforos
     tienda = Tienda(cantidad)
     # creo las hebras
@@ -36,7 +41,7 @@ def main():
     for i in range(len(mesones)):
         mesones[i].join()
     
-    print("LA TIENDA CERRO AAAAH")
+    print("\x1b[31mLA TIENDA CERRO\x1b[0m")
 
 
 if __name__ == "__main__":
