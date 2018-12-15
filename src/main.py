@@ -24,7 +24,9 @@ def main():
     # genero los clientes:
     for i in range(cantidad):
         clientes.append(Clientes(tienda, i+1))
+
     # START
+
     for i in range(len(mesones)):
         mesones[i].start()
     for i in range(len(cajas)):
@@ -40,9 +42,8 @@ def main():
         cajas[i].join()
     for i in range(len(mesones)):
         mesones[i].join()
-    
+
     print("\x1b[31mLA TIENDA CERRO\x1b[0m")
 
 
-if __name__ == "__main__":
-    main()
+main()
