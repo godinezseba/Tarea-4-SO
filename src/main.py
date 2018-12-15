@@ -35,6 +35,8 @@ def main():
         cajas[i].join()
     for i in range(len(mesones)):
         mesones[i].join()
+    
+    print("LA TIENDA CERRO AAAAH")
 
 
 if __name__ == "__main__":
