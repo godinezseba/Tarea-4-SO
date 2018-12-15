@@ -96,7 +96,7 @@ class Mesones(threading.Thread):
             if(self.tienda.termino()):
                 break
             self.cantidad += 1
-            print("\x1b[31m" + self.nombre + " atendiendo" + "\x1b[0m")
+            print("\x1b[31m" + self.nombre + " atendiendo " + str(self.cantidad) + "\x1b[0m")
         self.tienda.SemMesa[1].release()
         print("\x1b[31m***Termine de atender " + self.nombre + "***\x1b[0m")
 
@@ -114,6 +114,6 @@ class Cajas(threading.Thread):
             if(self.tienda.termino()):
                 break
             self.cantidad += 1
-            print("\x1b[32m" + self.nombre + " atendido" + "\x1b[0m")
+            print("\x1b[32m" + self.nombre + " atendido " + str(self.cantidad) + "\x1b[0m")
         self.tienda.SemCaja[1].release()
         print("\x1b[32m***Termine de atender " + self.nombre + "***\x1b[0m")
