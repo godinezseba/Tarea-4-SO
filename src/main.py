@@ -3,7 +3,7 @@ import threading
 
 
 def main():
-    cantidad = 40
+    cantidad = int(input("Ingrese la cantidad de clientes a atender: "))
     # reseteo los archivos
     clientes = open("clientes.txt", 'w')
     clientes.close()
